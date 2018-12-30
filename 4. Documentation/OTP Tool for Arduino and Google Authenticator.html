@@ -1,0 +1,111 @@
+<!doctype html>
+<!--
+Created by: http://www.lucadentella.it/en/2013/09/14/serratura-otp
+            http://www.lucadentella.it/OTP
+-->
+<html lang="en">
+
+	<head>
+
+		<title>OTP Tool for Arduino and Google Authenticator</title>
+
+		<script>
+		function update() {
+
+			var name = document.getElementById("name").value;
+			if(name == '') name = 'arduino';
+
+			var secret = document.getElementById("secret").value;
+
+			// check if the secret has the correct length
+			if(secret.length != 10) {
+				alert("Secret must be 10 characters");
+				document.getElementById("secret").focus();
+				return;
+			}
+
+			// create HEX array
+			var char_array = secret.split('');
+			var charcode_array = char_array.map(function (c) { return c.charCodeAt(0); });
+			var hex_array = '{';
+			for(i = 0; i < charcode_array.length; i++) {
+				if(i > 0) hex_array += ', ';
+				hex_array += '0x' + charcode_array[i].toString(16);
+			}
+			hex_array += '}';
+			document.getElementById("hexarray").value = hex_array;
+
+			// encode secret using base32
+			document.getElementById("ga_code").value = baseenc.b32encode(secret);
+
+			// create Google Charts' QRCode URL and update image source
+			var urlencoded = encodeURI('otpauth://totp/' + name + '?secret=' + baseenc.b32encode(secret));
+			var imgsrc = 'https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=' + urlencoded;
+			document.getElementById("qrcode").src = imgsrc;
+		}
+
+		var baseenc = baseenc || {};
+
+		baseenc.b32encode = function(s) {
+
+		/* encodes a string s to base32 and returns the encoded string */
+			var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+			var parts = [];
+			var quanta= Math.floor((s.length / 5));
+			var leftover = s.length % 5;
+
+			if (leftover != 0) {
+			for (var i = 0; i < (5-leftover); i++) { s += '\x00'; }
+			quanta += 1;
+			}
+
+			for (i = 0; i < quanta; i++) {
+				parts.push(alphabet.charAt(s.charCodeAt(i*5) >> 3));
+				parts.push(alphabet.charAt( ((s.charCodeAt(i*5) & 0x07) << 2)
+										   | (s.charCodeAt(i*5+1) >> 6)));
+				parts.push(alphabet.charAt( ((s.charCodeAt(i*5+1) & 0x3F) >> 1) ));
+				parts.push(alphabet.charAt( ((s.charCodeAt(i*5+1) & 0x01) << 4)
+										   | (s.charCodeAt(i*5+2) >> 4)));
+				parts.push(alphabet.charAt( ((s.charCodeAt(i*5+2) & 0x0F) << 1)
+										   | (s.charCodeAt(i*5+3) >> 7)));
+				parts.push(alphabet.charAt( ((s.charCodeAt(i*5+3) & 0x7F) >> 2)));
+				parts.push(alphabet.charAt( ((s.charCodeAt(i*5+3) & 0x03) << 3)
+										   | (s.charCodeAt(i*5+4) >> 5)));
+				parts.push(alphabet.charAt( ((s.charCodeAt(i*5+4) & 0x1F) )));
+			}
+
+			var replace = 0;
+			if (leftover == 1) replace = 6;
+			else if (leftover == 2) replace = 4;
+			else if (leftover == 3) replace = 3;
+			else if (leftover == 4) replace = 1;
+
+			for (i = 0; i < replace; i++) parts.pop();
+			for (i = 0; i < replace; i++) parts.push("=");
+
+			return parts.join("");
+		}
+		</script>
+
+	</head>
+
+	<body>
+	<h1>OTP Tool for Arduino and Google Authenticator</h1>
+	<h2>Created by: http://www.lucadentella.it</h2>
+    <br/>
+	<div style="width:250px;float:left">Choose an account name: </div>
+	<div><input type="text" id="name" placeholder="arduino" /></div>
+	<div style="width:250px;float:left">Insert your secret (10 characters): </div>
+	<div><input type="text" id="secret" maxlength="10" onkeydown="if (event.keyCode == 13) update();"/>
+	<input type="button" value="GO" onclick="update()" /></div>
+	<br>
+	<div style="width:250px;float:left">Arduino HEX array: </div>
+	<div><input type="text" id="hexarray" disabled=true style="width:400px" /></div>
+	<div style="width:250px;float:left">Google Authenticator code: </div>
+	<div><input type="text" id="ga_code" disabled=true style="width:400px" /></div>
+	<div>QRCode: </div>
+	<img id="qrcode" src=""></img>
+	</body>
+
+</html>

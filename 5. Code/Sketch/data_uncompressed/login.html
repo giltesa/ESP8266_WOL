@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="Wake On Lan with ESP8266">
+        <meta name="author" content="giltesa">
+        <link rel="icon" href="favicon.svg">
+
+        <title>Wake On Lan with ESP8266</title>
+
+        <!-- Web App: Android Chrome -->
+        <link rel="manifest" href="manifest.json">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="Wake On Lan with ESP8266">
+        <meta name="theme-color" content="#3F51B5">
+        <meta name="format-detection" content="telephone=no">
+
+        <link rel="stylesheet" href="bootstrap.min.css">
+        <link rel="stylesheet" href="style.css">
+    </head>
+
+    <body>
+
+        <form class="form-login">
+            <div class="text-center mb-4">
+                <img class="mb-4" src="favicon.svg" alt="" width="150" height="150">
+                <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
+            </div>
+
+            <div class="form-label-group">
+                <input type="password" name="password" id="password" class="form-control" placeholder="Password" required>
+                <label class="unselectable" for="password">Password</label>
+                <div class="valid-feedback">Loading, please wait...</div>
+                <div class="invalid-feedback">Password is incorrect!</div>
+            </div>
+
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+
+            <div class="text-center">
+                <p class="mt-5 mb-3 text-muted"><a href="https://giltesa.com" target="_blank" rel="noopener nofollow">giltesa</a> @ 2018 - <script>document.write(new Date().getFullYear())</script></p>
+            </div>
+        </form>
+
+        <script src="jquery.min.js"></script>
+        <script src="bootstrap.min.js"></script>
+        <script>
+            $(".form-login").submit(function(event)
+            {
+                event.preventDefault();
+
+                $.ajax({
+                    url          : "ws",
+                    type         : "POST",
+                    data: {
+                      "action"   : "login",
+                      "password" : $("#password").val()
+                    },
+                    beforeSend: function()
+                    {
+                        $(".form-login button").attr("disabled","disabled");
+                    },
+                    success: function(data, status, xhr)
+                    {
+                        $("#password").addClass("is-valid");
+                        $("#password").removeClass("is-invalid");
+                        $(".form-login button").removeAttr("disabled");
+
+                        window.setTimeout(function(){
+                            document.write(data);
+                        }, 1000);
+                    },
+                    error: function()
+                    {
+                        $("#password").val('');
+                        $("#password").addClass("is-invalid");
+                        $("#password").removeClass("is-valid");
+                        $(".form-login button").removeAttr("disabled");
+                    }
+                });
+            });
+        </script>
+
+    </body>
+
+</html>
