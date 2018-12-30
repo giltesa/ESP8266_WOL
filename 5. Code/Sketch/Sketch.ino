@@ -3,7 +3,7 @@
  * Autor:    Alberto Gil Tesa
  * Web:      https://giltesa.com/?p=19312
  * License:  CC BY-NC-SA 3.0
- * Version:  1.0
+ * Version:  1.0.1
  * Date:     2018/12/30
  *
  * Note:     Look for the words "MODIFY" to customize the code before writing it to ESP8266.
@@ -161,6 +161,12 @@ void setup()
 void loop()
 {
     server.handleClient();
+
+    while( WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0,0,0,0) )
+    {
+        WiFi.reconnect();
+        delay(1000);
+    }
 }
 
 
