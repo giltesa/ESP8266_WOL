@@ -1,4 +1,4 @@
-# Wake On Lan with ESP8266
+# Wake On Lan con ESP8266
 
 **Esto no es una librería para hacer Wake On Lan**, es un proyecto que permite saltarse las restricciones del los routers que instalan las operadoras de internet y que no permiten configurar registros estáticos de la tabla ARP.
 
