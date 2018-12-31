@@ -1,0 +1,28 @@
+#THIS FILE CONTAINS THE CONFIGURATION FOR THE ESP8266
+#DO NOT COMPRESS THIS FILE
+#
+#FIRST BLOCK CONTAINS:
+#   SSID                The name of the WiFi network.
+#   PASSWORD            The password of the WiFi network.
+#   HOSTNAME            Name of the ESP8266 that will be displayed on the router.
+#   TOTP_KEY            Key to generate the login tokens, generated with: http://www.lucadentella.it/OTP
+#
+#NEXT BLOCKS CONTAIN:
+#   KEY                 Unique name to identify each of your devices / computers.
+#   IP                  The static IP of the device to ping.
+#   MAC                 The MAC of the device to be turned on.
+
+
+MyWiFi
+MyPasswordLalala
+ESP_WOL
+00 1A 2B 3C 4D 5E 6F 77 88 99
+
+
+NAS
+192.168.1.2
+00:1A:2B:3C:4D:5E
+
+XPC
+192.168.1.3
+5E:4D:3C:2B:1A:00

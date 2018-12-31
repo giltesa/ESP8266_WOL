@@ -3,10 +3,8 @@
  * Autor:    Alberto Gil Tesa
  * Web:      https://giltesa.com/?p=19312
  * License:  CC BY-NC-SA 3.0
- * Version:  1.0.1
- * Date:     2018/12/30
- *
- * Note:     Look for the words "MODIFY" to customize the code before writing it to ESP8266.
+ * Version:  1.0.2
+ * Date:     2018/12/31
  */
 
 
@@ -27,13 +25,17 @@
 #include "Device.h"
 
 
-//#define MY_DEBUG     true                //MODIFY: Uncomment?
-const char* ssid     = "MyWiFi";           //MODIFY
-const char* password = "MyPassWordLalala"; //MODIFY
+
+//#define MY_DEBUG true
+#define COUNT(x) sizeof(x)/sizeof(*x)
+
+char ssid[16];
+char password[16];
+char hostName[16];
 ESP8266WebServer server(80);
 
-uint8_t hmacKey[] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99}; //MODIFY with: http://www.lucadentella.it/OTP
-TOTP totp         = TOTP(hmacKey, 10);
+TOTP *totp;
+uint8_t hmacKey[10];
 List<String> validTokenList(4);
 
 WiFiUDP UDP;
@@ -48,50 +50,10 @@ void setup()
     #ifdef MY_DEBUG
         Serial.begin(115200);
         while(!Serial);
-        Serial.println("\n0. ESP8266 started");
+        Serial.println("\n1. ESP8266 started");
     #endif
 
     NTP.begin();
-
-
-
-    //CONFIGURE THE DEVICES //MODIFY: For your devices, Remember to also modify the file wol.html
-    //
-    byte mac1[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 };
-    deviceList.Add( Device("NAS", IPAddress(192, 168, 1, 2), mac1) );
-
-    byte mac2[] = { 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 };
-    deviceList.Add( Device("XPC", IPAddress(192, 168, 1, 3), mac2) );
-
-
-
-    //CONFIGURE THE NETWORK
-    //
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-
-    if( WiFi.status() != WL_CONNECTED )
-    {
-        delay(500);
-        #ifdef MY_DEBUG
-            Serial.print("1. Waiting to connect");
-        #endif
-
-        while( WiFi.status() != WL_CONNECTED )
-        {
-            delay(500);
-            #ifdef MY_DEBUG
-                Serial.print(".");
-            #endif
-        }
-    }
-    #ifdef MY_DEBUG
-        Serial.println();
-        Serial.print("2. Connected to: ");
-        Serial.println(WiFi.SSID());
-        Serial.print("3. IP address:   ");
-        Serial.println(WiFi.localIP());
-    #endif
 
 
 
@@ -110,8 +72,51 @@ void setup()
             str += dir.fileSize();
             str += "\r\n";
         }
-        Serial.println("4. WEB file list:");
+        Serial.println("2. WEB file list:");
         Serial.print(str);
+    #endif
+
+
+
+    //CONFIGURE THE ESP8266
+    //
+    #ifdef MY_DEBUG
+        Serial.println("3. Loading configuration");
+    #endif
+
+    loadConfig("/config.txt");
+
+    totp = new TOTP(hmacKey, COUNT(hmacKey));
+
+
+
+    //CONFIGURE THE NETWORK
+    //
+    WiFi.mode(WIFI_STA);
+    WiFi.hostname(hostName);
+    WiFi.begin(ssid, password);
+
+    if( WiFi.status() != WL_CONNECTED )
+    {
+        delay(500);
+        #ifdef MY_DEBUG
+            Serial.print("4. Waiting to connect");
+        #endif
+
+        while( WiFi.status() != WL_CONNECTED )
+        {
+            delay(500);
+            #ifdef MY_DEBUG
+                Serial.print(".");
+            #endif
+        }
+    }
+    #ifdef MY_DEBUG
+        Serial.println();
+        Serial.print("5. Connected to: ");
+        Serial.println(WiFi.SSID());
+        Serial.print("6. IP address:   ");
+        Serial.println(WiFi.localIP());
     #endif
 
 
@@ -142,7 +147,7 @@ void setup()
     server.begin();
 
     #ifdef MY_DEBUG
-        Serial.println("5. HTTP server started");
+        Serial.println("7. HTTP server started");
     #endif
 
 
@@ -414,7 +419,7 @@ String getTokenTOTP()
     #endif
 
     static String oldCode = "";
-           String newCode = String( totp.getCode(NTP.getTime()) );
+           String newCode = String( totp->getCode(NTP.getTime()) );
            String token;
 
     if( !oldCode.equals(newCode) )
@@ -424,4 +429,133 @@ String getTokenTOTP()
     }
 
     return token;
+}
+
+
+
+/**
+ * Read the necessary data to configure the ESP8266.
+ */
+void loadConfig( String path )
+{
+    if( SPIFFS.exists(path) )
+    {
+        File file = SPIFFS.open(path, "r");
+        String line;
+
+        if( file )
+        {
+            bool flagConf = false;
+
+            while( file.available() > 0 )
+            {
+                if( file.peek() == '\r' || file.peek() == '#' ){
+                    file.readStringUntil('\n');
+                    continue;
+                }
+
+                if( !flagConf )
+                {
+                    //Read basic configuration:
+                    flagConf = true;
+
+
+                    //SSID
+                    line = file.readStringUntil('\n');
+                    line.toCharArray(ssid, line.length());
+
+                    #ifdef MY_DEBUG
+                        Serial.print("SSID     = ");
+                        Serial.println(ssid);
+                    #endif
+
+
+                    //PASSWORD
+                    line = file.readStringUntil('\n');
+                    line.toCharArray(password, line.length());
+
+                    #ifdef MY_DEBUG
+                        Serial.print("PASSWORD = ");
+                        Serial.println(password);
+                    #endif
+
+
+                    //HOSTNAME
+                    line = file.readStringUntil('\n');
+                    line.toCharArray(hostName, line.length());
+
+                    #ifdef MY_DEBUG
+                        Serial.print("HOSTNAME = ");
+                        Serial.println(hostName);
+                    #endif
+
+
+                    //TOTP KEY
+                    char tArray[3];
+                    for( int i=0 ; i<COUNT(hmacKey) ; i++ )
+                    {
+                        line = file.readStringUntil(i<COUNT(hmacKey)-1 ? ' ' : '\n');
+                        strcpy(tArray, line.c_str());
+                        hmacKey[i] = (byte)strtol(tArray, NULL, 16);
+                    }
+
+                    #ifdef MY_DEBUG
+                        Serial.print("TOTP KEY = ");
+                        for( int i=0 ; i<COUNT(hmacKey) ; i++ ){
+                            Serial.print(hmacKey[i], HEX);
+                            Serial.print(i<COUNT(hmacKey)-1 ? " " : "");
+                        }
+                        Serial.println();
+                    #endif
+                }
+                else
+                {
+                    //Read devices:
+
+                    //Name Device:
+                    String name = file.readStringUntil('\n');
+                    name.trim();
+
+                    #ifdef MY_DEBUG
+                        Serial.print("NAME = ");
+                        Serial.println(name);
+                    #endif
+
+
+                    //IP:
+                    IPAddress ip(file.parseInt(), file.parseInt(), file.parseInt(), file.parseInt());
+
+                    #ifdef MY_DEBUG
+                        Serial.print("IP   = ");
+                        Serial.println(ip);
+                    #endif
+
+
+                    //MAC:
+                    byte mac[6];
+                    char tArray[3];
+                    for( int i=0 ; i<COUNT(mac) ; i++ )
+                    {
+                        line = file.readStringUntil(i<COUNT(mac)-1 ? ':' : '\n');
+                        strcpy(tArray, line.c_str());
+                        mac[i] = (byte)strtol(tArray, NULL, 16);
+                    }
+
+                    #ifdef MY_DEBUG
+                        Serial.print("MAC  = ");
+                        for( int i=0 ; i<COUNT(mac) ; i++ ){
+                            Serial.print(mac[i], HEX);
+                            Serial.print(i<COUNT(mac)-1 ? ":" : "");
+                        }
+                        Serial.println();
+                    #endif
+
+
+                    deviceList.Add( Device(name, ip, mac) );
+                }
+            }
+        }
+
+        file.close();
+    }
 }
