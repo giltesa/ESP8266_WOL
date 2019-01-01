@@ -1,6 +1,6 @@
 # Wake On Lan con ESP8266
 
-**Esto no es una librería para hacer Wake On Lan**, es un proyecto que permite saltarse las restricciones del los routers que instalan las operadoras de internet y que no permiten configurar registros estáticos de la tabla ARP.
+Se trata de una página web servida desde el ESP8266 que permite al usuario encender los ordenadores de forma remota mediante Wake On Lan. Muy útil cuando no es posible añadir los registros estáticos de la tabla ARP en el router por restricciones/limitaciones en los routers que instalan las operadoras de internet.
 
 https://www.youtube.com/watch?v=VM-oufo-1DY
 

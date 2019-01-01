@@ -2,9 +2,9 @@
  * Name:     Wake On Lan with ESP8266
  * Autor:    Alberto Gil Tesa
  * Web:      https://giltesa.com/?p=19312
- * License:  CC BY-NC-SA 3.0
- * Version:  1.0.2
- * Date:     2018/12/31
+ * License:  CC BY-NC-SA 4.0
+ * Version:  1.0.3
+ * Date:     2019/01/01
  */
 
 
@@ -236,9 +236,9 @@ void handleWebService()
 
 
 
-    // WS: Turn on the device by Wake On Lan.
+    // WS: Returns the list of devices.
     //
-    if( server.hasArg("action") && server.arg("action").equals("wol") )
+    if( server.hasArg("action") && server.arg("action").equals("devices") )
     {
         if( !isAuthentified() )
         {
@@ -250,22 +250,26 @@ void handleWebService()
         }
         else
         {
-            String name = server.arg("device");
-            int index   = deviceList.IndexOf( Device(name) );
-
-            if( index != -1 )
+            if( deviceList.Count() > 0 )
             {
-                WakeOnLan::sendWOL(broadcastIP, UDP, deviceList[index].mac, sizeof deviceList[index].mac);
-                server.send(200, "text/plain", "The "+ name +" has been turned on.");
+                String index, name, json = "{";
+
+                for( int i=0 ; i < deviceList.Count(); i++ )
+                {
+                    index = String(i);
+                    name  = String(deviceList[i].name);
+                    json += ("\""+ index +"\":\""+ name +"\"");
+                    json += (i < deviceList.Count()-1 ? ",":"");
+                }
+
+                json += "}";
+
+                server.send(200, "application/json", json);
             }
             else
             {
                 server.send(400, "text/plain", "400: Bad Request");
             }
-
-            //Delete the used token:
-            server.sendHeader("Set-Cookie", "ESPSESSIONID=0");
-            validTokenList.Remove( validTokenList.IndexOf( getTokenFromCookie() ) );
         }
     }
 
@@ -296,6 +300,41 @@ void handleWebService()
             {
                 server.send(400, "text/plain", "400: Bad Request");
             }
+        }
+    }
+
+
+
+    // WS: Turn on the device by Wake On Lan.
+    //
+    if( server.hasArg("action") && server.arg("action").equals("wol") )
+    {
+        if( !isAuthentified() )
+        {
+            #ifdef MY_DEBUG
+                Serial.println("Login Failed");
+            #endif
+
+            server.send(401, "text/plain", "401: Unauthorized");
+        }
+        else
+        {
+            String name = server.arg("device");
+            int index   = deviceList.IndexOf( Device(name) );
+
+            if( index != -1 )
+            {
+                WakeOnLan::sendWOL(broadcastIP, UDP, deviceList[index].mac, sizeof deviceList[index].mac);
+                server.send(200, "text/plain", "The "+ name +" has been turned on.");
+            }
+            else
+            {
+                server.send(400, "text/plain", "400: Bad Request");
+            }
+
+            //Delete the used token:
+            server.sendHeader("Set-Cookie", "ESPSESSIONID=0");
+            validTokenList.Remove( validTokenList.IndexOf( getTokenFromCookie() ) );
         }
     }
 

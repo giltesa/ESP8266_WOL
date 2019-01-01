@@ -2,7 +2,7 @@
  * Name:     Wake On Lan with ESP8266
  * Autor:    Alberto Gil Tesa
  * Web:      https://giltesa.com/?p=19312
- * License:  CC BY-NC-SA 3.0
+ * License:  CC BY-NC-SA 4.0
  */
 
 
