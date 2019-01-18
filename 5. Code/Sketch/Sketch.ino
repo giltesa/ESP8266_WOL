@@ -3,8 +3,8 @@
  * Autor:    Alberto Gil Tesa
  * Web:      https://giltesa.com/?p=19312
  * License:  CC BY-NC-SA 4.0
- * Version:  1.0.3
- * Date:     2019/01/01
+ * Version:  1.0.4
+ * Date:     2019/01/18
  */
 
 
@@ -92,32 +92,7 @@ void setup()
 
     //CONFIGURE THE NETWORK
     //
-    WiFi.mode(WIFI_STA);
-    WiFi.hostname(hostName);
-    WiFi.begin(ssid, password);
-
-    if( WiFi.status() != WL_CONNECTED )
-    {
-        delay(500);
-        #ifdef MY_DEBUG
-            Serial.print("4. Waiting to connect");
-        #endif
-
-        while( WiFi.status() != WL_CONNECTED )
-        {
-            delay(500);
-            #ifdef MY_DEBUG
-                Serial.print(".");
-            #endif
-        }
-    }
-    #ifdef MY_DEBUG
-        Serial.println();
-        Serial.print("5. Connected to: ");
-        Serial.println(WiFi.SSID());
-        Serial.print("6. IP address:   ");
-        Serial.println(WiFi.localIP());
-    #endif
+    connectWiFi();
 
 
 
@@ -152,12 +127,12 @@ void setup()
 
 
     pinMode(LED_BUILTIN, OUTPUT);
-    for( int i=0 ; i < 3 ; i++ )
+    for( int i=0 ; i < 6 ; i++ )
     {
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(600);
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(400);
+        digitalWrite(LED_BUILTIN, LOW);  //On
+        delay(200);
+        digitalWrite(LED_BUILTIN, HIGH); //Off
+        delay(100);
     }
 }
 
@@ -167,11 +142,57 @@ void loop()
 {
     server.handleClient();
 
-    while( WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0,0,0,0) )
+    if( WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0,0,0,0) )
     {
-        WiFi.reconnect();
+        connectWiFi();
+        /*
+        #ifdef MY_DEBUG
+            Serial.println("Restarting ESP8266");
+        #endif
         delay(1000);
+        ESP.restart();
+        */
     }
+}
+
+
+
+/**
+ * Connect the ESP8266 to WiFi
+ */
+void connectWiFi()
+{
+    WiFi.disconnect();
+
+    WiFi.mode(WIFI_STA);
+    WiFi.hostname(hostName);
+  //WiFi.setAutoReconnect(true);
+    WiFi.begin(ssid, password);
+
+    if( WiFi.status() != WL_CONNECTED )
+    {
+        delay(500);
+        #ifdef MY_DEBUG
+            Serial.print("4. Waiting to connect");
+        #endif
+
+        while( WiFi.status() != WL_CONNECTED )
+        {
+            delay(500);
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            #ifdef MY_DEBUG
+                Serial.print(".");
+            #endif
+        }
+        digitalWrite(LED_BUILTIN, HIGH); //Off
+    }
+    #ifdef MY_DEBUG
+        Serial.println();
+        Serial.print("5. Connected to: ");
+        Serial.println(WiFi.SSID());
+        Serial.print("6. IP address:   ");
+        Serial.println(WiFi.localIP());
+    #endif
 }
 
 
